@@ -19,17 +19,21 @@ function ProjectCard({ project, blocks, expanded }: { project: Project; blocks: 
   const id = project.id
   return (
     <div className="border border-[#2a2a2a] bg-[#161616]">
-      <button
-        type="button"
+      {/* Not a <button>, so it still works inside the view-only (disabled) fieldset. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
         onClick={() => uiStore.getState().toggleProjectExpanded(id)}
-        className="flex w-full items-center gap-2 px-3 py-2.5 text-left font-poppins text-[11px] font-semibold tracking-[0.5px] text-white uppercase hover:bg-[#1c1c1c]"
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && uiStore.getState().toggleProjectExpanded(id)}
+        className="flex w-full cursor-pointer items-center gap-2 px-3 py-2.5 text-left font-poppins text-[11px] font-semibold tracking-[0.5px] text-white uppercase hover:bg-[#1c1c1c]"
       >
         <Swatch color={project.color} />
         <span className="min-w-0 flex-1 truncate">{project.name || 'Unnamed'}</span>
         {project.deadline && <span className="text-[9px] font-normal text-[#888]">{shortDate(project.deadline)}</span>}
         <span className="text-[9px] font-normal text-[#666]">{blocks}</span>
         {expanded ? <ChevronDown size={13} className="text-[#666]" /> : <ChevronRight size={13} className="text-[#666]" />}
-      </button>
+      </div>
 
       {expanded && (
         <div className="flex flex-col gap-4 border-t border-[#2a2a2a] p-3">
@@ -126,14 +130,17 @@ export function ProjectsPanel() {
 
       {archived.length > 0 && (
         <div className="mt-6">
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
+            aria-expanded={showArchived}
             onClick={() => setShowArchived((v) => !v)}
-            className="flex w-full items-center gap-1.5 font-poppins text-[10px] tracking-[1.5px] text-[#777] uppercase hover:text-white"
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setShowArchived((v) => !v)}
+            className="flex w-full cursor-pointer items-center gap-1.5 font-poppins text-[10px] tracking-[1.5px] text-[#777] uppercase hover:text-white"
           >
             {showArchived ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             Archived ({archived.length})
-          </button>
+          </div>
           {showArchived && (
             <div className="mt-2 flex flex-col gap-1">
               {archived.map((p) => (

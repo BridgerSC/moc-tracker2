@@ -46,6 +46,13 @@ export interface ConfirmState {
   message: string
   confirmLabel: string
   onConfirm: () => void
+  /** 'danger' (default) for destructive choices, 'info' for neutral questions. */
+  tone?: 'danger' | 'info'
+  /** An optional middle choice. */
+  secondary?: { label: string; onSelect: () => void }
+  /** Label for the dismiss button (default "Cancel"). */
+  cancelLabel?: string
+  onCancel?: () => void
 }
 
 export interface UiState {

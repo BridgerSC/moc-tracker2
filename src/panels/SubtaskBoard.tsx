@@ -3,7 +3,7 @@ import { useRef, useState, type DragEvent, type MouseEvent } from 'react'
 import { newId } from '../model/ids'
 import { addSubtask, deleteSubtask, duplicateSubtask, moveSubtask, updateSubtask } from '../model/structure'
 import { SUBTASK_STATUSES, type Subtask, type SubtaskStatus, type Task, type TimelineDoc } from '../model/types'
-import { docStore, selectDoc, useDoc } from '../store/docStore'
+import { docStore, selectDoc, selectLocked, useDoc } from '../store/docStore'
 import { uiStore, useUi } from '../store/uiStore'
 
 const COLUMN_NAMES: Record<SubtaskStatus, string> = { todo: 'To Do', progress: 'In Progress', done: 'Done' }
@@ -41,7 +41,7 @@ function CardEditor({ initial, onDone }: { initial: string; onDone: (title: stri
   )
 }
 
-function Board({ task }: { task: Task }) {
+function Board({ task, locked }: { task: Task; locked: boolean }) {
   const editingId = useUi((s) => s.editingSubtaskId)
   const [draft, setDraft] = useState<SubtaskStatus | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
@@ -123,7 +123,7 @@ function Board({ task }: { task: Task }) {
                   ) : (
                     <div
                       data-card={card.id}
-                      draggable
+                      draggable={!locked}
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = 'move'
                         e.dataTransfer.setData('text/plain', card.id)
@@ -133,8 +133,8 @@ function Board({ task }: { task: Task }) {
                         setDragId(null)
                         setDrop(null)
                       }}
-                      onDoubleClick={() => uiStore.getState().setEditingSubtask(card.id)}
-                      onContextMenu={(e) => openMenu(e, card)}
+                      onDoubleClick={() => !locked && uiStore.getState().setEditingSubtask(card.id)}
+                      onContextMenu={(e) => (locked ? e.preventDefault() : openMenu(e, card))}
                       className={`group relative cursor-grab border border-[#2a2a2a] bg-[#1a1a1a] px-2.5 py-2 pr-6 font-poppins text-[11px] leading-snug whitespace-pre-wrap text-[#ddd] hover:border-[#444] ${
                         status === 'done' ? 'text-[#888] line-through' : ''
                       }`}
@@ -178,6 +178,7 @@ export function SubtaskBoard() {
   const doc = useDoc(selectDoc)
   const selection = useUi((s) => s.selection)
   const open = useUi((s) => s.boardOpen)
+  const locked = useDoc(selectLocked)
   const task = selection.size === 1 ? doc.tasks.find((t) => selection.has(t.id)) : undefined
   if (!task) return null
   const done = task.subtasks.filter((s) => s.status === 'done').length
@@ -198,9 +199,9 @@ export function SubtaskBoard() {
         {open ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
       </button>
       {open && (
-        <div className="min-h-0 flex-1">
-          <Board key={task.id} task={task} />
-        </div>
+        <fieldset disabled={locked} className="m-0 min-h-0 min-w-0 flex-1 border-0 p-0">
+          <Board key={task.id} task={task} locked={locked} />
+        </fieldset>
       )}
     </section>
   )

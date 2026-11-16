@@ -23,7 +23,11 @@ export function useShortcuts() {
 
       if (key === 'escape') {
         if (cancelActiveGesture()) return
-        if (ui.confirm) return ui.closeConfirm()
+        if (ui.confirm) {
+          const { onCancel } = ui.confirm
+          ui.closeConfirm()
+          return onCancel?.()
+        }
         if (ui.contextMenu) return ui.closeContextMenu()
         if (ui.shortcutsOpen) return ui.setShortcutsOpen(false)
         return ui.clearSelection()

@@ -3,6 +3,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { selectCanRedo, selectCanUndo, docStore, useDoc } from '../store/docStore'
 import { uiStore, useUi } from '../store/uiStore'
 import { downloadBackup, importFile } from './fileActions'
+import { SyncControls } from './SyncControls'
 
 function IconButton({ title, onClick, disabled, children }: { title: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
@@ -49,6 +50,8 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-1.5">
+        <SyncControls />
+        <div className="mx-1.5 h-5 w-px bg-[#2a2a2a]" />
         <IconButton title="Undo (Ctrl+Z)" disabled={!canUndo} onClick={() => docStore.getState().undo()}>
           <Undo2 size={15} />
         </IconButton>

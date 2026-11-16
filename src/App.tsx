@@ -1,3 +1,4 @@
+import { AccessDialog } from './app/AccessDialog'
 import { AppHeader } from './app/AppHeader'
 import { ConfirmDialog } from './app/ConfirmDialog'
 import { ContextMenu } from './app/ContextMenu'
@@ -20,6 +21,7 @@ export default function App() {
         <RightPanel />
       </div>
       <ContextMenu />
+      <AccessDialog />
       <ConfirmDialog />
       <ShortcutsDialog />
     </div>

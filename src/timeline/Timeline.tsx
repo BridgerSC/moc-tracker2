@@ -180,6 +180,11 @@ export function Timeline() {
     if (!task) return
     const wasSelected = ui.selection.has(taskId)
     const { shiftKey: shift, altKey: alt } = e
+    if (docStore.getState().locked) {
+      // View only: clicking still selects (to inspect), but nothing can be dragged.
+      ui.select([taskId], shift ? 'toggle' : 'replace')
+      return
+    }
     if (!shift && !alt && !wasSelected) ui.select([taskId])
 
     const startClient = { x: e.clientX, y: e.clientY }
@@ -295,7 +300,7 @@ export function Timeline() {
     if (e.target !== e.currentTarget) return
     const p = canvasPoint(e.clientX, e.clientY)
     const row = stepContainingY(layout, p.y)
-    if (!row) return
+    if (!row || !docStore.getState().ensureEditable()) return
     const project = doc.projects.find((pr) => !pr.archived)
     const task: Task = {
       id: newId('t'),
@@ -314,11 +319,12 @@ export function Timeline() {
 
   const onRename = useCallback((taskId: string) => {
     uiStore.getState().select([taskId])
-    uiStore.getState().setEditing(taskId)
+    if (docStore.getState().ensureEditable()) uiStore.getState().setEditing(taskId)
   }, [])
 
   const onBlockContextMenu = useCallback((e: ReactMouseEvent, taskId: string) => {
     e.preventDefault()
+    if (!docStore.getState().ensureEditable()) return
     const ui = uiStore.getState()
     if (!ui.selection.has(taskId)) ui.select([taskId])
     const ids = new Set(uiStore.getState().selection)
@@ -335,6 +341,7 @@ export function Timeline() {
     if (e.button !== 0) return
     e.stopPropagation()
     e.preventDefault()
+    if (docStore.getState().locked) return uiStore.getState().showProject(projectId)
     const startX = e.clientX
     let started = false
     let lastDays = NaN

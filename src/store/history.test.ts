@@ -111,6 +111,19 @@ describe('doc store', () => {
     expect(store.getState().history.past).toEqual([])
   })
 
+  it('refuses edits and undo while locked, but still allows replace', () => {
+    let blocked = 0
+    const store = createDocStore(emptyDoc(), () => blocked++)
+    store.getState().apply(withProject('p1'))
+    store.getState().setLocked(true)
+    store.getState().apply(withProject('p2'))
+    store.getState().undo()
+    expect(store.getState().history.present.projects.map((p) => p.id)).toEqual(['p1'])
+    expect(blocked).toBe(2)
+    store.getState().replace(withProject('remote')(emptyDoc()), { undoable: false })
+    expect(store.getState().history.present.projects.map((p) => p.id)).toEqual(['remote'])
+  })
+
   it('replace with undo can be reverted (accepting a remote version)', () => {
     const store = createDocStore()
     store.getState().apply(withProject('local'))

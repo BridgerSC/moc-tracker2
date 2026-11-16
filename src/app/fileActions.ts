@@ -8,11 +8,11 @@ const pad = (n: number) => String(n).padStart(2, '0')
 /** Saves the current document as a v5 JSON file. */
 export function downloadBackup() {
   const now = new Date()
-  const base = syncStore.getState().base
+  const { base, username } = syncStore.getState()
   const text = serializeTimelineFile(docStore.getState().history.present, {
-    rev: base.rev,
+    rev: base?.rev ?? 0,
     savedAt: now.toISOString(),
-    savedBy: base.savedBy ?? '',
+    savedBy: username,
   })
   const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))

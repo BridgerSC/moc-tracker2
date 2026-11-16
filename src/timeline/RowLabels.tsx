@@ -3,7 +3,7 @@ import { useRef, useState, type DragEvent, type MouseEvent } from 'react'
 import { copyGroup, copyStep, createStep, removeGroup, removeStep } from '../app/actions'
 import { moveGroup, moveStep, renameGroup, renameStep } from '../model/structure'
 import type { Group } from '../model/types'
-import { docStore } from '../store/docStore'
+import { docStore, selectLocked, useDoc } from '../store/docStore'
 import { uiStore, useUi } from '../store/uiStore'
 import type { Row, RowLayout } from './rows'
 
@@ -91,6 +91,7 @@ function NameInput({ initial, onDone }: { initial: string; onDone: (name: string
 /** Row names down the left edge: rename, reorder, collapse, right-click for more. */
 export function RowLabels({ layout, groups, height }: Props) {
   const renamingId = useUi((s) => s.renamingRowId)
+  const locked = useDoc(selectLocked)
   const [dragging, setDragging] = useState<Dragging | null>(null)
   const [drop, setDrop] = useState<Drop | null>(null)
   const container = useRef<HTMLDivElement>(null)
@@ -103,6 +104,7 @@ export function RowLabels({ layout, groups, height }: Props) {
 
   const openMenu = (e: MouseEvent, row: Row) => {
     e.preventDefault()
+    if (!docStore.getState().ensureEditable()) return
     const ui = uiStore.getState()
     const rename = { label: 'Rename', onSelect: () => ui.setRenamingRow(row.id) }
     ui.openContextMenu(
@@ -156,7 +158,7 @@ export function RowLabels({ layout, groups, height }: Props) {
     setDrop(null)
   }
 
-  const grip = (row: Row) => (
+  const grip = (row: Row) => locked ? <span className="w-[14px] shrink-0" /> : (
     <span
       draggable
       onDragStart={(e) => onDragStart(e, row)}
@@ -206,7 +208,7 @@ export function RowLabels({ layout, groups, height }: Props) {
             ) : (
               <span
                 className="min-w-0 flex-1 cursor-default truncate"
-                onDoubleClick={() => uiStore.getState().setRenamingRow(row.id)}
+                onDoubleClick={() => docStore.getState().ensureEditable() && uiStore.getState().setRenamingRow(row.id)}
                 title="Double-click to rename"
               >
                 {row.name || 'Unnamed'}
@@ -228,7 +230,7 @@ export function RowLabels({ layout, groups, height }: Props) {
             ) : (
               <span
                 className="min-w-0 flex-1 cursor-default truncate"
-                onDoubleClick={() => uiStore.getState().setRenamingRow(row.id)}
+                onDoubleClick={() => docStore.getState().ensureEditable() && uiStore.getState().setRenamingRow(row.id)}
                 title="Double-click to rename"
               >
                 {row.name || 'Unnamed'}

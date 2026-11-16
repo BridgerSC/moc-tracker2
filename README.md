@@ -16,6 +16,7 @@ npm test           # unit tests (vitest, run in America/Denver so DST cases are 
 npm run typecheck
 npm run lint
 npm run build      # production build into dist/
+npm run deploy     # checks + build, then publishes dist/ to the gh-pages branch (GitHub Pages)
 ```
 
 ## Layout
@@ -27,7 +28,7 @@ npm run build      # production build into dist/
 | `src/timeline/` | The canvas: ruler, deadline lane, rows, blocks, zoom/pan, selection box, drag and resize. Gestures preview with the same pure function they commit |
 | `src/app/` | Header, keyboard shortcuts, user-level actions (with delete confirmations), context menu, dialogs, import/download |
 | `src/panels/` | Right panel (Inspector, Projects) and the subtask board under the timeline |
-| `src/sync/` | Local autosave (done); *(milestone 4)* Gist load/save, token handling, conflicts |
+| `src/sync/` | Local autosave; Gist client; sync decisions (pure, tested); the sync store (load, upload, conflicts, team key) |
 
 ## Controls
 
@@ -65,6 +66,30 @@ The Gist file `data.json` is written as format v5:
 
 **Switching formats is one-way:** once this app saves to the Gist, the old v4.8 site can no longer read it.
 Deploy this build to the same GitHub Pages address so everyone switches at once.
+
+## Sync
+
+- Anyone can view the shared timeline. Editing needs the **team key**: a GitHub token from the Gist's owner
+  with Gist access (only a Gist's owner can save to it). It's stored only in that browser
+  (`localStorage`, same key as v4.8, so existing users keep theirs). Without it the app is view-only.
+- Edits autosave in the browser; **Upload** sends them to the Gist. The header shows the shared version and
+  "Unsaved changes" when there's something to upload.
+- Every save bumps `rev`. Before uploading, the app re-reads the Gist: if someone else saved in between it
+  asks whether to overwrite theirs or load theirs (undoable). Loading or refreshing takes the shared version
+  automatically when you have no unsaved changes, and asks when you do.
+- The app re-checks the Gist when the window regains focus (at most once a minute).
+
+## Rolling out
+
+1. **Test on a copy.** Create a new *secret* Gist (same GitHub account) with one file, `data.json`, holding a
+   copy of the live file's contents. Run `npm run dev`, click **View only**, paste the key and the copy's
+   Gist ID. Edit, upload, refresh, and try a conflict from two browsers. The live Gist is untouched.
+2. **Deploy.** `git push`, then `npm run deploy` publishes to the repo's `gh-pages` branch, replacing the
+   old site at the same address. Reading the live v4.8 file is safe; nothing changes until someone uploads.
+3. **Switch.** In the access dialog, set the Gist ID back to the live one (or clear the stored copy ID).
+   The first upload asks for confirmation, then converts the file to v5. Do it once everyone has the new site.
+
+`VITE_GIST_ID` (e.g. in `.env.local`) overrides the default Gist for a build or dev session.
 
 ## Testing against the real Gist
 
