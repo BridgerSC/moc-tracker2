@@ -1,4 +1,5 @@
 import { PartyPopper } from 'lucide-react'
+import type { PointerEvent } from 'react'
 import { toDayNumber } from '../model/dates'
 import type { Project } from '../model/types'
 import { DEADLINE_LANE_HEIGHT, RULER_HEIGHT, dayToX, type Scale } from './geometry'
@@ -13,10 +14,13 @@ interface Props {
   nowDay: number
   projects: Project[]
   showFlagNames: boolean
+  onFlagPointerDown: (e: PointerEvent, projectId: string) => void
 }
 
 /** The sticky band above the canvas: date ruler plus the deadline lane. */
-export function TimelineHeader({ scale, width, ticks, tickWidth, todayDay, nowDay, projects, showFlagNames }: Props) {
+export function TimelineHeader({
+  scale, width, ticks, tickWidth, todayDay, nowDay, projects, showFlagNames, onFlagPointerDown,
+}: Props) {
   return (
     <div className="relative" style={{ width, height: RULER_HEIGHT + DEADLINE_LANE_HEIGHT }}>
       <div className="relative overflow-hidden border-b border-[#2a2a2a] bg-[#161616]" style={{ height: RULER_HEIGHT }}>
@@ -48,9 +52,10 @@ export function TimelineHeader({ scale, width, ticks, tickWidth, todayDay, nowDa
             <div key={p.id} className="absolute top-0 bottom-0" style={{ left: x }}>
               <div className="absolute top-0 bottom-0 w-[2px] -translate-x-1/2 opacity-80" style={{ background: p.color }} />
               <div
-                className="absolute top-2 flex -translate-x-1/2 items-center gap-1 rounded-full px-2 py-1 font-poppins text-[9px] font-semibold whitespace-nowrap text-[#0e0e0e] uppercase"
+                className="absolute top-2 flex -translate-x-1/2 cursor-ew-resize items-center gap-1 rounded-full px-2 py-1 font-poppins text-[9px] font-semibold whitespace-nowrap text-[#0e0e0e] uppercase"
                 style={{ background: p.color }}
-                title={`${p.name || 'Unnamed'} deadline: ${p.deadline}`}
+                title={`${p.name || 'Unnamed'} deadline: ${p.deadline} (drag to move, click for details)`}
+                onPointerDown={(e) => onFlagPointerDown(e, p.id)}
               >
                 <PartyPopper size={11} />
                 {showFlagNames && <span className="max-w-[140px] truncate">{p.name || 'Unnamed'}</span>}

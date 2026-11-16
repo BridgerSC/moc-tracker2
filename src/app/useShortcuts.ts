@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { localToday, toDayNumber } from '../model/dates'
-import { deleteTasks, duplicateTasks, makeCloneIds, pasteTasks } from '../model/edits'
+import { pasteTasks } from '../model/edits'
+import { deleteBlocks, duplicateBlocks } from './actions'
 import { docStore } from '../store/docStore'
 import { uiStore } from '../store/uiStore'
 import { clipboard, pointer } from '../timeline/clipboard'
@@ -22,10 +23,13 @@ export function useShortcuts() {
 
       if (key === 'escape') {
         if (cancelActiveGesture()) return
+        if (ui.confirm) return ui.closeConfirm()
+        if (ui.contextMenu) return ui.closeContextMenu()
         if (ui.shortcutsOpen) return ui.setShortcutsOpen(false)
         return ui.clearSelection()
       }
-      if (ui.shortcutsOpen) return
+      if (ui.shortcutsOpen || ui.confirm) return
+      ui.closeContextMenu()
       if (mod && key === 'z') {
         e.preventDefault()
         return e.shiftKey ? docs.redo() : docs.undo()
@@ -41,8 +45,7 @@ export function useShortcuts() {
       if (key === 'delete' || key === 'backspace') {
         if (selected.length === 0) return
         e.preventDefault()
-        docs.apply((d) => deleteTasks(d, ui.selection))
-        return ui.clearSelection()
+        return deleteBlocks(ui.selection)
       }
       if (mod && key === 'c') {
         // Leave normal text copying alone (v4.8 blocked it everywhere).
@@ -65,10 +68,7 @@ export function useShortcuts() {
       if (mod && key === 'd') {
         // Duplicate each selected block directly after itself.
         e.preventDefault()
-        if (selected.length === 0) return
-        const idMap = makeCloneIds(selected.map((t) => t.id))
-        docs.apply((d) => duplicateTasks(d, idMap, (t) => t.duration))
-        return ui.select(idMap.values())
+        return duplicateBlocks(selected.map((t) => t.id))
       }
       if (mod && key === 'a') {
         e.preventDefault()

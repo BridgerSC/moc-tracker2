@@ -1,4 +1,4 @@
-import { CalendarClock, FileDown, FileUp, Keyboard, Redo2, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { CalendarClock, FileDown, FileUp, Keyboard, PanelRight, Redo2, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { selectCanRedo, selectCanUndo, docStore, useDoc } from '../store/docStore'
 import { uiStore, useUi } from '../store/uiStore'
@@ -74,6 +74,12 @@ export function AppHeader() {
         </IconButton>
         <IconButton title="Keyboard shortcuts (?)" onClick={() => ui.setShortcutsOpen(true)}>
           <Keyboard size={15} />
+        </IconButton>
+        <IconButton
+          title="Show/hide the side panel"
+          onClick={() => ui.setRightPanelOpen(!uiStore.getState().rightPanelOpen)}
+        >
+          <PanelRight size={15} />
         </IconButton>
         <input
           ref={fileInput}

@@ -1,5 +1,5 @@
 import { AlignLeft } from 'lucide-react'
-import { memo, type PointerEvent } from 'react'
+import { memo, type MouseEvent, type PointerEvent } from 'react'
 import type { Task } from '../model/types'
 import { BLOCK_INSET, STEP_ROW_HEIGHT } from './geometry'
 
@@ -15,12 +15,13 @@ interface Props {
   selected: boolean
   onPointerDown: (e: PointerEvent, taskId: string, part: BlockPart) => void
   onRename: (taskId: string) => void
+  onContextMenu: (e: MouseEvent, taskId: string) => void
 }
 
 const HEIGHT = STEP_ROW_HEIGHT - 2 * BLOCK_INSET
 
 export const TaskBlock = memo(function TaskBlock({
-  task, color, projectName, left, top, width, selected, onPointerDown, onRename,
+  task, color, projectName, left, top, width, selected, onPointerDown, onRename, onContextMenu,
 }: Props) {
   const done = task.subtasks.filter((s) => s.status === 'done').length
   const total = task.subtasks.length
@@ -43,6 +44,7 @@ export const TaskBlock = memo(function TaskBlock({
         e.stopPropagation()
         onRename(task.id)
       }}
+      onContextMenu={(e) => onContextMenu(e, task.id)}
       title={subline ? `${headline} · ${subline}` : headline}
     >
       {showText && (

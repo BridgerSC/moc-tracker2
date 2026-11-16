@@ -8,7 +8,9 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
+import { Plus } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
+import { createGroup, deleteBlocks, duplicateBlocks } from '../app/actions'
 import { FALLBACK_COLOR } from '../model/colors'
 import { fromDayNumber, localToday, nowAsDayNumber, toDayNumber } from '../model/dates'
 import { addTask, makeCloneIds, updateTask } from '../model/edits'
@@ -159,7 +161,7 @@ export function Timeline() {
   const commitGesture = () => {
     const ui = uiStore.getState()
     const g = ui.gesture
-    if (g && (g.kind === 'move' || g.kind === 'resize')) {
+    if (g && (g.kind === 'move' || g.kind === 'resize' || g.kind === 'deadline')) {
       const ids = latest.current.visibleStepIds
       docStore.getState().apply((d) => applyGesture(d, g, ids))
       if (g.kind === 'move' && g.cloneIds) ui.select(g.cloneIds.values())
@@ -315,6 +317,43 @@ export function Timeline() {
     uiStore.getState().setEditing(taskId)
   }, [])
 
+  const onBlockContextMenu = useCallback((e: ReactMouseEvent, taskId: string) => {
+    e.preventDefault()
+    const ui = uiStore.getState()
+    if (!ui.selection.has(taskId)) ui.select([taskId])
+    const ids = new Set(uiStore.getState().selection)
+    const many = ids.size > 1
+    ui.openContextMenu(e.clientX, e.clientY, [
+      ...(many ? [] : [{ label: 'Rename', onSelect: () => onRename(taskId) }]),
+      { label: many ? `Duplicate ${ids.size} blocks` : 'Duplicate', onSelect: () => duplicateBlocks(ids) },
+      { label: many ? `Delete ${ids.size} blocks` : 'Delete', danger: true, divider: true, onSelect: () => deleteBlocks(ids) },
+    ])
+  }, [onRename])
+
+  // Drag a deadline flag to move the deadline; click it to open the project.
+  const onFlagPointerDown = (e: ReactPointerEvent, projectId: string) => {
+    if (e.button !== 0) return
+    e.stopPropagation()
+    e.preventDefault()
+    const startX = e.clientX
+    let started = false
+    let lastDays = NaN
+    runPointerSession(
+      (ev) => {
+        if (!started && Math.abs(ev.clientX - startX) < DRAG_THRESHOLD_PX) return
+        started = true
+        const days = Math.round((ev.clientX - startX) / latest.current.scale.dayWidth)
+        if (days === lastDays) return
+        lastDays = days
+        uiStore.getState().setGesture({ kind: 'deadline', projectId, days })
+      },
+      () => {
+        if (started) commitGesture()
+        else uiStore.getState().showProject(projectId)
+      },
+    )
+  }
+
   // --- what to draw -----------------------------------------------------------
   const width = contentWidth(scale)
   const canvasHeight = Math.max(layout.height + 160, viewport.height - TIMELINE_HEADER_HEIGHT)
@@ -351,7 +390,18 @@ export function Timeline() {
             className="sticky left-0 z-40 flex shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0e0e0e]"
             style={{ width: SIDEBAR_WIDTH, height: TIMELINE_HEADER_HEIGHT }}
           >
-            <div className="flex-1 border-b border-[#2a2a2a] bg-[#161616]" />
+            <div className="flex flex-1 items-center justify-between border-b border-[#2a2a2a] bg-[#161616] pr-1.5 pl-3">
+              <span className="font-poppins text-[10px] tracking-[1.5px] text-[#888] uppercase">Process Timeline</span>
+              <button
+                type="button"
+                title="New category"
+                aria-label="New category"
+                onClick={createGroup}
+                className="flex h-6 w-6 items-center justify-center rounded-[3px] text-[#06D6A0] hover:bg-[#06D6A0]/15"
+              >
+                <Plus size={15} />
+              </button>
+            </div>
             <div
               className="flex items-center border-b border-[#2a2a2a] px-3 font-poppins text-[10px] tracking-[1.5px] text-[#888] uppercase"
               style={{ height: DEADLINE_LANE_HEIGHT }}
@@ -368,12 +418,13 @@ export function Timeline() {
             nowDay={nowDay}
             projects={deadlineProjects}
             showFlagNames={zoom > 0.4}
+            onFlagPointerDown={onFlagPointerDown}
           />
         </div>
 
         <div className="flex">
           <div className="sticky left-0 z-20 shrink-0" style={{ width: SIDEBAR_WIDTH }}>
-            <RowLabels layout={layout} height={canvasHeight} onToggleGroup={(id) => uiStore.getState().toggleGroup(id)} />
+            <RowLabels layout={layout} groups={doc.groups} height={canvasHeight} />
           </div>
 
           <div
@@ -441,6 +492,7 @@ export function Timeline() {
                   selected={selection.has(t.id)}
                   onPointerDown={onBlockPointerDown}
                   onRename={onRename}
+                  onContextMenu={onBlockContextMenu}
                 />
               )
             })}

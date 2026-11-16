@@ -1,4 +1,6 @@
+import { addDays } from '../model/dates'
 import { duplicateTasks, moveTasks, resizeTasks, type ResizeEdge, type ResizeMode } from '../model/edits'
+import { updateProject } from '../model/structure'
 import type { TimelineDoc } from '../model/types'
 
 // An in-progress pointer gesture. The timeline renders `applyGesture(doc, gesture)`
@@ -34,7 +36,14 @@ export interface PanGesture {
   kind: 'pan'
 }
 
-export type Gesture = MoveGesture | ResizeGesture | MarqueeGesture | PanGesture
+/** Dragging a project's deadline flag. */
+export interface DeadlineGesture {
+  kind: 'deadline'
+  projectId: string
+  days: number
+}
+
+export type Gesture = MoveGesture | ResizeGesture | MarqueeGesture | PanGesture | DeadlineGesture
 
 export function applyGesture(doc: TimelineDoc, g: Gesture, visibleStepIds: readonly string[]): TimelineDoc {
   switch (g.kind) {
@@ -48,6 +57,10 @@ export function applyGesture(doc: TimelineDoc, g: Gesture, visibleStepIds: reado
     }
     case 'resize':
       return resizeTasks(doc, { ids: g.ids, edge: g.edge, days: g.days, mode: g.mode })
+    case 'deadline': {
+      const deadline = doc.projects.find((p) => p.id === g.projectId)?.deadline
+      return deadline && g.days !== 0 ? updateProject(doc, g.projectId, { deadline: addDays(deadline, g.days) }) : doc
+    }
     case 'marquee':
     case 'pan':
       return doc

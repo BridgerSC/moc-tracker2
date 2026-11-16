@@ -25,6 +25,28 @@ function saveCollapsed(ids: ReadonlySet<string>) {
 }
 
 export type SelectMode = 'replace' | 'add' | 'toggle'
+export type RightTab = 'inspector' | 'projects'
+
+export interface MenuItem {
+  label: string
+  onSelect: () => void
+  danger?: boolean
+  /** Draw a divider above this item. */
+  divider?: boolean
+}
+
+export interface ContextMenuState {
+  x: number
+  y: number
+  items: MenuItem[]
+}
+
+export interface ConfirmState {
+  title: string
+  message: string
+  confirmLabel: string
+  onConfirm: () => void
+}
 
 export interface UiState {
   zoom: number
@@ -39,6 +61,17 @@ export interface UiState {
   shortcutsOpen: boolean
   /** One-line status shown in the header (import results etc.). */
   notice: string | null
+  rightPanelOpen: boolean
+  rightTab: RightTab
+  /** Project cards expanded in the Projects tab. */
+  expandedProjects: ReadonlySet<string>
+  /** Subtask board expanded (it only shows when one block is selected). */
+  boardOpen: boolean
+  contextMenu: ContextMenuState | null
+  confirm: ConfirmState | null
+  /** Group or step whose name is being edited in the row labels. */
+  renamingRowId: string | null
+  editingSubtaskId: string | null
 
   setZoom: (zoom: number, anchorPx?: number | null) => void
   select: (ids: Iterable<string>, mode?: SelectMode) => void
@@ -49,6 +82,19 @@ export interface UiState {
   requestToday: () => void
   setShortcutsOpen: (open: boolean) => void
   setNotice: (notice: string | null) => void
+  setRightPanelOpen: (open: boolean) => void
+  setRightTab: (tab: RightTab) => void
+  /** Opens the Projects tab with that project's card expanded. */
+  showProject: (projectId: string) => void
+  toggleProjectExpanded: (projectId: string) => void
+  setBoardOpen: (open: boolean) => void
+  openContextMenu: (x: number, y: number, items: MenuItem[]) => void
+  closeContextMenu: () => void
+  /** Asks before running `onConfirm`. */
+  askConfirm: (confirm: ConfirmState) => void
+  closeConfirm: () => void
+  setRenamingRow: (rowId: string | null) => void
+  setEditingSubtask: (subtaskId: string | null) => void
 }
 
 export const uiStore = createStore<UiState>()((set) => ({
@@ -61,18 +107,31 @@ export const uiStore = createStore<UiState>()((set) => ({
   todayRequest: 0,
   shortcutsOpen: false,
   notice: null,
+  rightPanelOpen: true,
+  rightTab: 'projects',
+  expandedProjects: new Set(),
+  boardOpen: true,
+  contextMenu: null,
+  confirm: null,
+  renamingRowId: null,
+  editingSubtaskId: null,
 
   setZoom: (zoom, anchorPx = null) => set({ zoom: clampZoom(zoom), zoomAnchorPx: anchorPx }),
   select: (ids, mode = 'replace') =>
     set((s) => {
       const list = [...ids]
-      if (mode === 'replace') return { selection: new Set(list) }
-      const next = new Set(s.selection)
-      for (const id of list) {
-        if (mode === 'toggle' && next.has(id)) next.delete(id)
-        else next.add(id)
+      let next: Set<string>
+      if (mode === 'replace') {
+        next = new Set(list)
+      } else {
+        next = new Set(s.selection)
+        for (const id of list) {
+          if (mode === 'toggle' && next.has(id)) next.delete(id)
+          else next.add(id)
+        }
       }
-      return { selection: next }
+      // Selecting something from nothing brings up the inspector.
+      return s.selection.size === 0 && next.size > 0 ? { selection: next, rightTab: 'inspector' } : { selection: next }
     }),
   clearSelection: () => set((s) => (s.selection.size === 0 ? s : { selection: new Set() })),
   setEditing: (editingTaskId) => set({ editingTaskId }),
@@ -87,6 +146,27 @@ export const uiStore = createStore<UiState>()((set) => ({
   requestToday: () => set((s) => ({ todayRequest: s.todayRequest + 1 })),
   setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
   setNotice: (notice) => set({ notice }),
+  setRightPanelOpen: (rightPanelOpen) => set({ rightPanelOpen }),
+  setRightTab: (rightTab) => set({ rightTab, rightPanelOpen: true }),
+  showProject: (projectId) =>
+    set((s) => ({
+      rightPanelOpen: true,
+      rightTab: 'projects',
+      expandedProjects: new Set([...s.expandedProjects, projectId]),
+    })),
+  toggleProjectExpanded: (projectId) =>
+    set((s) => {
+      const next = new Set(s.expandedProjects)
+      if (!next.delete(projectId)) next.add(projectId)
+      return { expandedProjects: next }
+    }),
+  setBoardOpen: (boardOpen) => set({ boardOpen }),
+  openContextMenu: (x, y, items) => set({ contextMenu: { x, y, items } }),
+  closeContextMenu: () => set((s) => (s.contextMenu ? { contextMenu: null } : s)),
+  askConfirm: (confirm) => set({ confirm, contextMenu: null }),
+  closeConfirm: () => set({ confirm: null }),
+  setRenamingRow: (renamingRowId) => set({ renamingRowId }),
+  setEditingSubtask: (editingSubtaskId) => set({ editingSubtaskId }),
 }))
 
 export function useUi<T>(selector: (state: UiState) => T): T {

@@ -25,8 +25,8 @@ npm run build      # production build into dist/
 | `src/model/` | Pure data code, no React: types, calendar-date helpers, IDs, colours, edit operations (move/resize/ripple/duplicate/paste), reading/writing the Gist file (with v4.8 migration) |
 | `src/store/` | Zustand stores. `docStore`: the synced document and its undo history. `uiStore`: zoom, selection, gesture in progress |
 | `src/timeline/` | The canvas: ruler, deadline lane, rows, blocks, zoom/pan, selection box, drag and resize. Gestures preview with the same pure function they commit |
-| `src/app/` | Header, keyboard shortcuts, shortcuts dialog, import/download |
-| `src/panels/` | *(milestone 3)* sidebar editing, inspector, projects, subtask board |
+| `src/app/` | Header, keyboard shortcuts, user-level actions (with delete confirmations), context menu, dialogs, import/download |
+| `src/panels/` | Right panel (Inspector, Projects) and the subtask board under the timeline |
 | `src/sync/` | Local autosave (done); *(milestone 4)* Gist load/save, token handling, conflicts |
 
 ## Controls
@@ -37,6 +37,8 @@ Press `?` in the app for the full list. The ones that differ from v4.8:
 - **Shift+drag** a block or edge **ripples**: later blocks in the same row move with it.
 - **Alt+drag an edge** is the rolling resize (v4.8 used Shift+edge).
 - **Ctrl+D** duplicates next to the original; **Ctrl+A** selects all; **Esc** cancels a drag or clears the selection; **Enter/F2** renames.
+- Deleting a project leaves its blocks as “No Project”; deleting a category or row that has blocks asks first.
+  Archiving a project hides its blocks and deadline flag until restored.
 
 ## Data format
 
