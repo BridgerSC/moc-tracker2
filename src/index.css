@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-bebas: 'Bebas Neue', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #0e0e0e;
+  color: #e8e8e8;
+  color-scheme: dark;
+}
