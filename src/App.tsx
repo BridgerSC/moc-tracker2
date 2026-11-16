@@ -1,8 +1,15 @@
-// Placeholder shell. The timeline UI arrives in milestone 2.
+import { AppHeader } from './app/AppHeader'
+import { ShortcutsDialog } from './app/ShortcutsDialog'
+import { useShortcuts } from './app/useShortcuts'
+import { Timeline } from './timeline/Timeline'
+
 export default function App() {
+  useShortcuts()
   return (
-    <div className="flex h-full items-center justify-center font-mono">
-      <h1 className="m-0 font-bebas text-5xl tracking-[3px] text-white">PROJECT CAL</h1>
+    <div className="flex h-full flex-col overflow-hidden font-mono select-none">
+      <AppHeader />
+      <Timeline />
+      <ShortcutsDialog />
     </div>
   )
 }
