@@ -44,9 +44,9 @@ describe('ticks', () => {
   it('labels days, marking the 1st as major', () => {
     const ticks = computeTicks(1, day('2026-10-31'), day('2026-11-02'), true)
     expect(ticks.map((t) => [t.label, t.sub, t.major])).toEqual([
-      ['31', 'SAT', false],
-      ['NOV 1', 'SUN', true],
-      ['2', 'MON', false],
+      ['31', 'Sat', false],
+      ['Nov 1', 'Sun', true],
+      ['2', 'Mon', false],
     ])
   })
 
@@ -57,7 +57,7 @@ describe('ticks', () => {
 
   it('labels months and years, starting with the one already in progress', () => {
     expect(computeTicks(0.1, day('2026-11-15'), day('2027-02-01'), false).map((t) => t.label)).toEqual([
-      "NOV '26", "DEC '26", "JAN '27", "FEB '27",
+      "Nov '26", "Dec '26", "Jan '27", "Feb '27",
     ])
     expect(computeTicks(0.02, day('2026-06-01'), day('2028-03-01'), false).map((t) => t.label)).toEqual([
       '2026', '2027', '2028',

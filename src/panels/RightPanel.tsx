@@ -6,8 +6,8 @@ import { Inspector } from './Inspector'
 import { ProjectsPanel } from './ProjectsPanel'
 
 const TABS: [RightTab, string][] = [
+  ['inspector', 'Details'],
   ['projects', 'Projects'],
-  ['inspector', 'Inspector'],
 ]
 
 export function RightPanel() {
@@ -17,29 +17,31 @@ export function RightPanel() {
   if (!open) return null
 
   return (
-    <aside className="flex w-[300px] shrink-0 flex-col border-l border-[#2a2a2a] bg-[#0e0e0e]">
-      <div className="flex h-8 shrink-0 border-b border-[#2a2a2a] bg-[#161616]">
+    <aside aria-label="Side panel" className="flex w-[320px] shrink-0 flex-col border-l border-line bg-surface">
+      <div role="tablist" aria-label="Side panel" className="flex h-12 shrink-0 items-end gap-5 border-b border-line px-5">
         {TABS.map(([id, label]) => (
           <button
             key={id}
             type="button"
+            role="tab"
+            aria-selected={tab === id}
             onClick={() => uiStore.getState().setRightTab(id)}
-            className={`flex-1 border-b font-poppins text-[10px] tracking-[1px] uppercase transition-colors ${
-              tab === id ? 'border-white bg-[#0e0e0e] text-white' : 'border-transparent text-[#666] hover:text-[#aaa]'
+            className={`-mb-px cursor-pointer border-b-2 pb-2.5 text-[13px] font-medium transition-colors ${
+              tab === id ? 'border-accent text-ink' : 'border-transparent text-ink-subtle hover:text-ink'
             }`}
           >
             {label}
           </button>
         ))}
       </div>
-      <div className="brutal-scroll min-h-0 flex-1 overflow-y-auto">
+      <div className="paper-scroll min-h-0 flex-1 overflow-y-auto">
         {locked && (
           <button
             type="button"
             onClick={openAccess}
-            className="flex w-full items-center gap-2 border-b border-[#2a2a2a] bg-[#161616] px-5 py-2.5 text-left font-poppins text-[10px] tracking-[1px] text-[#e0a040] uppercase hover:bg-[#1c1c1c]"
+            className="flex w-full cursor-pointer items-center gap-2 border-b border-warn/25 bg-warn-soft px-5 py-2.5 text-left text-[12px] text-warn-ink hover:bg-warn-soft/70"
           >
-            <Lock size={12} /> View only · add the team key to edit
+            <Lock size={13} /> View only. Add the team key to make changes.
           </button>
         )}
         {/* A disabled fieldset disables every control inside it. */}

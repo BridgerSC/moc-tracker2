@@ -83,7 +83,7 @@ function NameInput({ initial, onDone }: { initial: string; onDone: (name: string
         }
       }}
       onBlur={(e) => finish(e.currentTarget.value.trim())}
-      className="min-w-0 flex-1 border border-[#555] bg-[#0e0e0e] px-1.5 py-0.5 font-poppins text-[12px] text-white outline-none focus:border-[#A06CD5]"
+      className="h-7 min-w-0 flex-1 rounded-md border border-accent bg-surface px-2 text-[13px] font-medium tracking-normal text-ink normal-case outline-none ring-3 ring-accent/15"
     />
   )
 }
@@ -164,7 +164,7 @@ export function RowLabels({ layout, groups, height }: Props) {
       onDragStart={(e) => onDragStart(e, row)}
       onDragEnd={endDrag}
       onClick={(e) => e.stopPropagation()}
-      className="flex shrink-0 cursor-grab items-center text-[#444] hover:text-[#aaa] active:cursor-grabbing"
+      className="flex shrink-0 cursor-grab items-center text-ink-subtle opacity-0 transition-opacity group-hover:opacity-100 hover:text-ink active:cursor-grabbing"
       title="Drag to reorder"
     >
       <GripVertical size={14} />
@@ -174,7 +174,7 @@ export function RowLabels({ layout, groups, height }: Props) {
   return (
     <div
       ref={container}
-      className="relative border-r border-[#2a2a2a] bg-[#0e0e0e]"
+      className="relative border-r border-line bg-surface"
       style={{ height }}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -189,14 +189,14 @@ export function RowLabels({ layout, groups, height }: Props) {
           <div
             key={row.id}
             data-row
-            className={`absolute inset-x-0 flex items-center gap-1 border-b border-[#2a2a2a] bg-[#161616] pr-2 pl-1 font-poppins text-[11px] font-semibold tracking-[1px] text-[#A06CD5] uppercase ${faded}`}
+            className={`group absolute inset-x-0 flex items-center gap-1 border-b border-line bg-subtle pr-2 pl-1 text-[11px] font-semibold tracking-[0.06em] text-ink-muted uppercase ${faded}`}
             style={{ top: row.top, height: row.height }}
             onContextMenu={(e) => openMenu(e, row)}
           >
             {grip(row)}
             <button
               type="button"
-              className="flex shrink-0 items-center text-[#A06CD5] hover:text-white"
+              className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-subtle hover:bg-sunken hover:text-ink"
               onClick={() => uiStore.getState().toggleGroup(row.id)}
               title={row.collapsed ? 'Expand' : 'Collapse'}
               aria-label={row.collapsed ? 'Expand' : 'Collapse'}
@@ -214,13 +214,15 @@ export function RowLabels({ layout, groups, height }: Props) {
                 {row.name || 'Unnamed'}
               </span>
             )}
-            {row.collapsed && <span className="text-[9px] font-normal text-[#666]">{row.stepCount}</span>}
+            {row.collapsed && (
+              <span className="rounded-full bg-sunken px-1.5 text-[10px] font-medium tracking-normal text-ink-subtle">{row.stepCount}</span>
+            )}
           </div>
         ) : (
           <div
             key={row.id}
             data-row
-            className={`absolute inset-x-0 flex items-center gap-1 border-b border-[#2a2a2a] bg-[#0e0e0e] pr-2 pl-4 font-poppins text-[12px] text-[#e8e8e8] ${faded}`}
+            className={`group absolute inset-x-0 flex items-center gap-1.5 border-b border-line bg-surface pr-2 pl-3 text-[13px] font-medium text-ink hover:bg-subtle ${faded}`}
             style={{ top: row.top, height: row.height }}
             onContextMenu={(e) => openMenu(e, row)}
           >
@@ -241,7 +243,7 @@ export function RowLabels({ layout, groups, height }: Props) {
       })}
       {drop && (
         <div
-          className={`pointer-events-none absolute inset-x-0 z-10 h-[3px] -translate-y-1/2 ${drop.kind === 'group' ? 'bg-[#06D6A0]' : 'bg-[#118AB2]'}`}
+          className={`pointer-events-none absolute inset-x-2 z-10 h-[3px] -translate-y-1/2 rounded-full ${drop.kind === 'group' ? 'bg-accent' : 'bg-accent/70'}`}
           style={{ top: drop.lineY }}
         />
       )}

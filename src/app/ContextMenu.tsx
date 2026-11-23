@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { uiStore, useUi } from '../store/uiStore'
 
-const WIDTH = 170
+const WIDTH = 200
 
-/** The right-click menu. Closes on any outside press, scroll, Esc or after choosing. */
+/** The right-click menu (also used for the toolbar's "more" button). Closes on outside press, scroll, Esc or a choice. */
 export function ContextMenu() {
   const menu = useUi((s) => s.contextMenu)
 
@@ -21,25 +21,27 @@ export function ContextMenu() {
   }, [menu])
 
   if (!menu) return null
-  const height = menu.items.length * 30 + 12
-  const left = Math.min(menu.x, window.innerWidth - WIDTH - 8)
-  const top = Math.min(menu.y, window.innerHeight - height - 8)
+  const height = menu.items.length * 32 + 12
+  const left = Math.max(8, Math.min(menu.x, window.innerWidth - WIDTH - 8))
+  const top = Math.max(8, Math.min(menu.y, window.innerHeight - height - 8))
 
   return (
     <div
       role="menu"
-      className="fixed z-[200] border border-[#2a2a2a] bg-[#161616] py-1.5 font-poppins text-[12px] shadow-[4px_4px_0_rgba(0,0,0,0.6)]"
+      className="fixed z-[200] rounded-lg border border-line bg-surface p-1 text-[13px] shadow-pop"
       style={{ left, top, width: WIDTH }}
       onPointerDown={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.preventDefault()}
     >
       {menu.items.map((item) => (
         <div key={item.label}>
-          {item.divider && <div className="my-1 h-px bg-[#2a2a2a]" />}
+          {item.divider && <div className="mx-1 my-1 h-px bg-line" />}
           <button
             type="button"
             role="menuitem"
-            className={`block h-[30px] w-full px-3 text-left hover:bg-[#2a2a2a] ${item.danger ? 'text-[#e05050]' : 'text-[#e8e8e8]'}`}
+            className={`flex h-8 w-full cursor-pointer items-center rounded-md px-2.5 text-left ${
+              item.danger ? 'text-danger hover:bg-danger-soft' : 'text-ink hover:bg-sunken'
+            }`}
             onClick={() => {
               uiStore.getState().closeContextMenu()
               item.onSelect()

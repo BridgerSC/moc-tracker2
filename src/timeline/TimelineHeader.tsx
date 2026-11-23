@@ -1,7 +1,8 @@
-import { PartyPopper } from 'lucide-react'
+import { Flag } from 'lucide-react'
 import type { PointerEvent } from 'react'
 import { toDayNumber } from '../model/dates'
 import type { Project } from '../model/types'
+import { projectSwatch } from '../ui/color'
 import { DEADLINE_LANE_HEIGHT, RULER_HEIGHT, dayToX, type Scale } from './geometry'
 import type { Tick } from './ticks'
 
@@ -9,6 +10,7 @@ interface Props {
   scale: Scale
   width: number
   ticks: Tick[]
+  /** Set at day zoom: each tick is one day this wide. */
   tickWidth: number | null
   todayDay: number
   nowDay: number
@@ -22,44 +24,67 @@ export function TimelineHeader({
   scale, width, ticks, tickWidth, todayDay, nowDay, projects, showFlagNames, onFlagPointerDown,
 }: Props) {
   return (
-    <div className="relative" style={{ width, height: RULER_HEIGHT + DEADLINE_LANE_HEIGHT }}>
-      <div className="relative overflow-hidden border-b border-[#2a2a2a] bg-[#161616]" style={{ height: RULER_HEIGHT }}>
+    <div className="relative bg-surface" style={{ width, height: RULER_HEIGHT + DEADLINE_LANE_HEIGHT }}>
+      <div className="relative overflow-hidden border-b border-line" style={{ height: RULER_HEIGHT }}>
         {ticks.map((t) => {
-          const isToday = tickWidth !== null && t.day === todayDay
+          const left = dayToX(scale, t.day)
+          if (tickWidth === null) {
+            // Week / month / year ticks: one label each.
+            return (
+              <div
+                key={t.day}
+                className={`absolute top-0 flex h-full items-end border-l border-line px-2 pb-2.5 text-[12px] whitespace-nowrap ${
+                  t.major ? 'font-semibold text-ink' : 'text-ink-muted'
+                }`}
+                style={{ left }}
+              >
+                {t.label}
+              </div>
+            )
+          }
+          // Day ticks: weekday (or month on the 1st) above the date number.
+          const isToday = t.day === todayDay
+          const [top, num] = t.label.includes(' ') ? t.label.split(' ') : [t.sub ?? '', t.label]
+          const topText = t.label.includes(' ') ? top : tickWidth > 48 ? top : top?.slice(0, 1)
           return (
             <div
               key={t.day}
-              className={`absolute top-0 flex h-full flex-col justify-center border-l px-1.5 text-[9px] leading-tight tracking-[1px] whitespace-nowrap uppercase ${
-                t.major ? 'border-[#555] font-bold text-white' : 'border-[#2a2a2a] text-[#888]'
-              } ${isToday ? 'bg-[#EF476F]/25 text-white' : ''}`}
-              style={{ left: dayToX(scale, t.day), width: tickWidth ?? undefined }}
+              className="absolute top-0 flex h-full flex-col items-center justify-end gap-1 pb-2"
+              style={{ left, width: tickWidth }}
             >
-              <span>{t.label}</span>
-              {t.sub && <span className="text-[8px] font-normal opacity-60">{t.sub}</span>}
+              <span className={`text-[10px] leading-none font-medium ${t.major ? 'text-ink' : 'text-ink-subtle'}`}>
+                {topText}
+              </span>
+              <span
+                className={`flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[12px] leading-none ${
+                  isToday ? 'bg-accent font-semibold text-white' : t.major ? 'font-semibold text-ink' : 'text-ink-muted'
+                }`}
+              >
+                {num}
+              </span>
             </div>
           )
         })}
-        <div className="absolute top-0 bottom-0 w-[2px] bg-red-500" style={{ left: dayToX(scale, nowDay) - 1 }}>
-          <div className="absolute top-0 -left-[4px] border-x-[5px] border-t-[6px] border-x-transparent border-t-red-500" />
-        </div>
+        {tickWidth === null && <div className="absolute top-0 bottom-0 w-[2px] bg-accent" style={{ left: dayToX(scale, nowDay) - 1 }} />}
       </div>
-      <div className="relative overflow-hidden border-b border-[#2a2a2a] bg-[#0e0e0e]" style={{ height: DEADLINE_LANE_HEIGHT }}>
+      <div className="relative overflow-hidden border-b border-line" style={{ height: DEADLINE_LANE_HEIGHT }}>
         {projects.map((p) => {
           if (!p.deadline) return null
-          // The line marks the end of the (inclusive) deadline day.
+          // The flag sits at the end of the (inclusive) deadline day.
           const x = dayToX(scale, toDayNumber(p.deadline) + 1)
+          const sw = projectSwatch(p.color)
           return (
-            <div key={p.id} className="absolute top-0 bottom-0" style={{ left: x }}>
-              <div className="absolute top-0 bottom-0 w-[2px] -translate-x-1/2 opacity-80" style={{ background: p.color }} />
-              <div
-                className="absolute top-2 flex -translate-x-1/2 cursor-ew-resize items-center gap-1 rounded-full px-2 py-1 font-poppins text-[9px] font-semibold whitespace-nowrap text-[#0e0e0e] uppercase"
-                style={{ background: p.color }}
-                title={`${p.name || 'Unnamed'} deadline: ${p.deadline} (drag to move, click for details)`}
-                onPointerDown={(e) => onFlagPointerDown(e, p.id)}
-              >
-                <PartyPopper size={11} />
-                {showFlagNames && <span className="max-w-[140px] truncate">{p.name || 'Unnamed'}</span>}
-              </div>
+            <div
+              key={p.id}
+              role="button"
+              tabIndex={-1}
+              className="absolute top-2 flex h-6 -translate-x-full cursor-ew-resize items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium whitespace-nowrap text-ink"
+              style={{ left: x, background: sw.fill, borderColor: sw.edge }}
+              title={`${p.name || 'Unnamed'} deadline: ${p.deadline} (drag to move, click for details)`}
+              onPointerDown={(e) => onFlagPointerDown(e, p.id)}
+            >
+              <Flag size={11} strokeWidth={2.4} />
+              {showFlagNames && <span className="max-w-[160px] truncate">{p.name || 'Unnamed'}</span>}
             </div>
           )
         })}

@@ -40,6 +40,8 @@ import { TaskBlock, type BlockPart } from './TaskBlock'
 import { computeTicks, weekendDays } from './ticks'
 import { TimelineHeader } from './TimelineHeader'
 import { TitleEditor } from './TitleEditor'
+import { projectSwatch } from '../ui/color'
+import { iconBtn } from '../ui/styles'
 
 const NO_PROJECT = { name: 'No Project', color: FALLBACK_COLOR }
 
@@ -369,10 +371,7 @@ export function Timeline() {
   const lastDay = Math.min(lastRangeDay, Math.ceil(xToDay(scale, viewport.left + viewport.width - SIDEBAR_WIDTH + RENDER_BUFFER_PX)))
   const dayZoom = scale.dayWidth >= 24
 
-  const ticks = useMemo(
-    () => computeTicks(zoom, firstDay, lastDay, scale.dayWidth > 48),
-    [zoom, firstDay, lastDay, scale.dayWidth],
-  )
+  const ticks = useMemo(() => computeTicks(zoom, firstDay, lastDay, dayZoom), [zoom, firstDay, lastDay, dayZoom])
   const weekends = useMemo(() => (zoom > 0.15 ? weekendDays(firstDay, lastDay) : []), [zoom, firstDay, lastDay])
   const deadlineProjects = useMemo(() => view.projects.filter((p) => !p.archived && p.deadline), [view.projects])
   const visibleTasks = shown.filter((t) => {
@@ -386,7 +385,7 @@ export function Timeline() {
   return (
     <div
       ref={scrollerRef}
-      className="brutal-scroll relative min-h-0 flex-1 overflow-auto"
+      className="paper-scroll relative min-h-0 flex-1 overflow-auto bg-surface"
       onScroll={readViewport}
       onAuxClick={(e) => e.button === 1 && e.preventDefault()}
     >
@@ -394,25 +393,16 @@ export function Timeline() {
         {/* Sticky top band: corner + ruler/deadlines */}
         <div className="sticky top-0 z-30 flex" style={{ width: SIDEBAR_WIDTH + width }}>
           <div
-            className="sticky left-0 z-40 flex shrink-0 flex-col border-r border-[#2a2a2a] bg-[#0e0e0e]"
+            className="sticky left-0 z-40 flex shrink-0 flex-col border-r border-line bg-surface"
             style={{ width: SIDEBAR_WIDTH, height: TIMELINE_HEADER_HEIGHT }}
           >
-            <div className="flex flex-1 items-center justify-between border-b border-[#2a2a2a] bg-[#161616] pr-1.5 pl-3">
-              <span className="font-poppins text-[10px] tracking-[1.5px] text-[#888] uppercase">Process Timeline</span>
-              <button
-                type="button"
-                title="New category"
-                aria-label="New category"
-                onClick={createGroup}
-                className="flex h-6 w-6 items-center justify-center rounded-[3px] text-[#06D6A0] hover:bg-[#06D6A0]/15"
-              >
+            <div className="flex flex-1 items-end justify-between border-b border-line pr-2 pb-2 pl-4">
+              <span className="text-[11px] font-medium tracking-[0.04em] text-ink-subtle uppercase">Rows</span>
+              <button type="button" title="New category" aria-label="New category" onClick={createGroup} className={`${iconBtn} h-7 w-7`}>
                 <Plus size={15} />
               </button>
             </div>
-            <div
-              className="flex items-center border-b border-[#2a2a2a] px-3 font-poppins text-[10px] tracking-[1.5px] text-[#888] uppercase"
-              style={{ height: DEADLINE_LANE_HEIGHT }}
-            >
+            <div className="flex items-center border-b border-line px-4 text-[12px] text-ink-subtle" style={{ height: DEADLINE_LANE_HEIGHT }}>
               Deadlines
             </div>
           </div>
@@ -445,43 +435,31 @@ export function Timeline() {
             {/* Background layers (never receive pointer events) */}
             <div className="pointer-events-none absolute inset-0">
               {weekends.map((day) => (
-                <div
-                  key={`we-${day}`}
-                  className="absolute top-0 bottom-0 bg-white/[0.03]"
-                  style={{
-                    left: dayToX(scale, day),
-                    width: scale.dayWidth,
-                    backgroundImage:
-                      'repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 8px)',
-                  }}
-                />
+                <div key={`we-${day}`} className="absolute top-0 bottom-0 bg-ink/[0.028]" style={{ left: dayToX(scale, day), width: scale.dayWidth }} />
               ))}
               {layout.rows.map((row) => (
                 <div
                   key={`row-${row.id}`}
-                  className={`absolute inset-x-0 border-b border-[#2a2a2a] ${row.kind === 'group' ? 'bg-[#161616]/50' : ''}`}
+                  className={`absolute inset-x-0 border-b border-line ${row.kind === 'group' ? 'bg-subtle' : ''}`}
                   style={{ top: row.top, height: row.height }}
                 />
               ))}
-              <div className="absolute inset-x-0 bottom-0 bg-black/30" style={{ top: layout.height }} />
+              <div className="absolute inset-x-0 bottom-0 bg-canvas/70" style={{ top: layout.height }} />
               {ticks.map((t) => (
                 <div
                   key={`tick-${t.day}`}
-                  className="absolute top-0 bottom-0 w-px bg-[#2a2a2a]"
-                  style={{ left: dayToX(scale, t.day), opacity: t.major ? 1 : 0.4 }}
+                  className="absolute top-0 bottom-0 w-px bg-line"
+                  style={{ left: dayToX(scale, t.day), opacity: t.major ? 1 : 0.55 }}
                 />
               ))}
               {deadlineProjects.map((p) => (
                 <div
                   key={`dl-${p.id}`}
-                  className="absolute top-0 bottom-0 w-0 border-l-2 border-dashed opacity-40"
-                  style={{ left: dayToX(scale, toDayNumber(p.deadline!) + 1) - 1, borderColor: p.color }}
+                  className="absolute top-0 bottom-0 w-0 border-l-2 border-dashed"
+                  style={{ left: dayToX(scale, toDayNumber(p.deadline!) + 1) - 1, borderColor: projectSwatch(p.color).edge }}
                 />
               ))}
-              <div
-                className="absolute top-0 bottom-0 z-30 w-[2px] bg-red-500/70 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
-                style={{ left: dayToX(scale, nowDay) - 1 }}
-              />
+              <div className="absolute top-0 bottom-0 z-30 w-[2px] bg-accent" style={{ left: dayToX(scale, nowDay) - 1 }} />
             </div>
 
             {visibleTasks.map((t) => {
@@ -506,7 +484,7 @@ export function Timeline() {
 
             {marquee && (
               <div
-                className="pointer-events-none absolute z-30 border border-[#118AB2] bg-[#118AB2]/20"
+                className="pointer-events-none absolute z-30 rounded-sm border border-accent bg-accent/10"
                 style={{
                   left: Math.min(marquee.x0, marquee.x1),
                   top: Math.min(marquee.y0, marquee.y1),

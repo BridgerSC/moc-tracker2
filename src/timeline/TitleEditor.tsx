@@ -34,8 +34,8 @@ export function TitleEditor({ initial, left, top, width, onCommit, onCancel }: P
         }
       }}
       onBlur={(e) => finish(() => onCommit(e.currentTarget.value.trim()))}
-      className="absolute z-40 rounded-[3px] border-2 border-white bg-[#0e0e0e] px-2 font-poppins text-[12px] font-semibold text-white outline-none"
-      style={{ left, top: top + BLOCK_INSET, width: Math.max(width, 200), height: 32 }}
+      className="absolute z-40 rounded-md border border-accent bg-surface px-2.5 text-[13px] font-medium text-ink shadow-pop outline-none ring-3 ring-accent/15 placeholder:text-ink-subtle"
+      style={{ left, top: top + BLOCK_INSET + 10, width: Math.max(width, 220), height: 34 }}
     />
   )
 }

@@ -1,10 +1,11 @@
 import { CircleHelp, TriangleAlert } from 'lucide-react'
 import { uiStore, useUi } from '../store/uiStore'
+import { btn, dialog } from '../ui/styles'
 
 export function ConfirmDialog() {
   const confirm = useUi((s) => s.confirm)
   if (!confirm) return null
-  const accent = confirm.tone === 'info' ? '#118AB2' : '#EF476F'
+  const danger = confirm.tone !== 'info'
   const cancel = () => {
     uiStore.getState().closeConfirm()
     confirm.onCancel?.()
@@ -13,46 +14,38 @@ export function ConfirmDialog() {
     uiStore.getState().closeConfirm()
     fn()
   }
-  const button = 'flex-1 border py-2 px-2 font-poppins text-[11px] tracking-[1px] uppercase'
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={cancel}>
-      <div
-        role="alertdialog"
-        aria-label={confirm.title}
-        className="w-full max-w-md border border-[#2a2a2a] bg-[#111] p-6"
-        style={{ boxShadow: `8px 8px 0 ${accent}` }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-3 flex items-center gap-2 font-bebas text-2xl tracking-[2px]" style={{ color: accent }}>
-          {confirm.tone === 'info' ? <CircleHelp size={20} /> : <TriangleAlert size={20} />} {confirm.title}
-        </div>
-        <p className="m-0 font-poppins text-[13px] leading-relaxed whitespace-pre-line text-[#ccc]">{confirm.message}</p>
-        <div className="mt-6 flex gap-2">
-          <button
-            type="button"
-            className={`${button} font-semibold text-[#0e0e0e] hover:brightness-110`}
-            style={{ background: accent, borderColor: accent }}
-            onClick={choose(confirm.onConfirm)}
+    <div className={`${dialog.backdrop} z-[150]`} onClick={cancel}>
+      <div role="alertdialog" aria-label={confirm.title} className={`${dialog.panel} max-w-md`} onClick={(e) => e.stopPropagation()}>
+        <div className="flex gap-3.5">
+          <div
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+              danger ? 'bg-danger-soft text-danger' : 'bg-accent-soft text-accent-ink'
+            }`}
           >
-            {confirm.confirmLabel}
+            {danger ? <TriangleAlert size={17} /> : <CircleHelp size={17} />}
+          </div>
+          <div className="flex flex-col gap-2 pt-1.5">
+            <h2 className={dialog.title}>{confirm.title}</h2>
+            <p className="m-0 text-[13px] leading-relaxed whitespace-pre-line text-ink-muted">{confirm.message}</p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button type="button" autoFocus className={btn('secondary')} onClick={cancel}>
+            {confirm.cancelLabel ?? 'Cancel'}
           </button>
           {confirm.secondary && (
-            <button
-              type="button"
-              className={`${button} border-[#666] text-[#ddd] hover:border-white hover:text-white`}
-              onClick={choose(confirm.secondary.onSelect)}
-            >
+            <button type="button" className={btn('secondary')} onClick={choose(confirm.secondary.onSelect)}>
               {confirm.secondary.label}
             </button>
           )}
           <button
             type="button"
-            autoFocus
-            className={`${button} border-[#444] text-[#aaa] hover:border-[#888] hover:text-white`}
-            onClick={cancel}
+            className={danger ? `${btn('primary')} bg-danger hover:bg-danger/90` : btn('primary')}
+            onClick={choose(confirm.onConfirm)}
           >
-            {confirm.cancelLabel ?? 'Cancel'}
+            {confirm.confirmLabel}
           </button>
         </div>
       </div>

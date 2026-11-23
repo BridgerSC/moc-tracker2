@@ -1,4 +1,4 @@
-import { Clock, Copy, FolderOpen, Rows3, SquareDashedMousePointer, Trash2, Type, Zap } from 'lucide-react'
+import { Copy, MousePointerClick, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { deleteBlocks, duplicateBlocks } from '../app/actions'
 import { FALLBACK_COLOR } from '../model/colors'
@@ -8,7 +8,8 @@ import { orphanTasks, updateTasks } from '../model/structure'
 import type { Project, Task, TimelineDoc } from '../model/types'
 import { docStore, selectDoc, useDoc } from '../store/docStore'
 import { useUi } from '../store/uiStore'
-import { DateField, Label, PanelButton, Swatch, TextField, inputClass } from './fields'
+import { btn, input } from '../ui/styles'
+import { DateField, Divider, Label, PanelButton, Swatch, TextField } from './fields'
 
 const apply = (recipe: (d: TimelineDoc) => TimelineDoc) => docStore.getState().apply(recipe)
 
@@ -19,9 +20,10 @@ function ProjectPicker({ projects, currentId, onPick }: { projects: Project[]; c
     <button
       key={key}
       type="button"
+      aria-pressed={active}
       onClick={onClick}
-      className={`flex w-full items-center gap-2 border px-3 py-2 text-left font-poppins text-[11px] transition-colors ${
-        active ? 'border-[#888] bg-[#222] text-white' : 'border-[#2a2a2a] bg-[#161616] text-[#ccc] hover:border-[#444]'
+      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-[13px] transition-colors ${
+        active ? 'bg-accent-soft font-medium text-accent-ink' : 'text-ink hover:bg-subtle'
       }`}
     >
       <Swatch color={color} />
@@ -29,7 +31,7 @@ function ProjectPicker({ projects, currentId, onPick }: { projects: Project[]; c
     </button>
   )
   return (
-    <div className="brutal-scroll flex max-h-48 flex-col gap-1 overflow-y-auto">
+    <div className="paper-scroll flex max-h-52 flex-col gap-0.5 overflow-y-auto rounded-md border border-line p-1">
       {options.map((p) => row(p.id, p.color, `${p.name || 'Unnamed'}${p.archived ? ' (archived)' : ''}`, p.id === currentId, () => onPick(p.id)))}
       {row('none', FALLBACK_COLOR, 'No project', currentId === null, () => onPick(null))}
     </div>
@@ -38,27 +40,42 @@ function ProjectPicker({ projects, currentId, onPick }: { projects: Project[]; c
 
 function SingleBlock({ task, doc }: { task: Task; doc: TimelineDoc }) {
   const end = endDate(task.start, task.duration)
+  const project = doc.projects.find((p) => p.id === task.projectId)
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <Label icon={<Type size={11} />}>Block title</Label>
+      <div className="flex flex-col gap-1">
+        <span className="flex items-center gap-1.5 text-[11px] font-medium tracking-[0.04em] text-ink-subtle uppercase">
+          <Swatch color={project?.color ?? FALLBACK_COLOR} size={8} />
+          {project?.name || 'No project'}
+        </span>
         <TextField
           value={task.title}
-          placeholder="Untitled"
+          placeholder="Untitled block"
+          ariaLabel="Block title"
           coalesceKey={`task:${task.id}:title`}
           update={(d, title) => updateTask(d, task.id, { title })}
         />
       </div>
+
       <div>
-        <Label icon={<FolderOpen size={11} />}>Project</Label>
-        <ProjectPicker projects={doc.projects} currentId={task.projectId} onPick={(projectId) => apply((d) => updateTask(d, task.id, { projectId }))} />
+        <Label>Dates · {task.duration} day{task.duration === 1 ? '' : 's'}</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <DateField ariaLabel="Start date" value={task.start} onChange={(start) => apply((d) => updateTask(d, task.id, { start }))} />
+          <DateField
+            ariaLabel="End date"
+            value={end}
+            onChange={(newEnd) => apply((d) => updateTask(d, task.id, { duration: Math.max(1, daysBetween(task.start, newEnd) + 1) }))}
+          />
+        </div>
       </div>
+
       <div>
-        <Label icon={<Rows3 size={11} />}>Row</Label>
+        <Label>Row</Label>
         <select
+          aria-label="Row"
           value={task.stepId}
           onChange={(e) => apply((d) => updateTask(d, task.id, { stepId: e.target.value }))}
-          className={`${inputClass} [color-scheme:dark]`}
+          className={`${input} cursor-pointer`}
         >
           {doc.groups.map((g) => (
             <optgroup key={g.id} label={g.name || 'Unnamed'}>
@@ -71,38 +88,31 @@ function SingleBlock({ task, doc }: { task: Task; doc: TimelineDoc }) {
           ))}
         </select>
       </div>
+
       <div>
-        <Label icon={<Clock size={11} />}>Timing · {task.duration} day{task.duration === 1 ? '' : 's'}</Label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <DateField value={task.start} onChange={(start) => apply((d) => updateTask(d, task.id, { start }))} />
-            <div className="mt-1 text-center font-poppins text-[9px] tracking-[1px] text-[#666] uppercase">Start</div>
-          </div>
-          <div>
-            <DateField
-              value={end}
-              onChange={(newEnd) => apply((d) => updateTask(d, task.id, { duration: Math.max(1, daysBetween(task.start, newEnd) + 1) }))}
-            />
-            <div className="mt-1 text-center font-poppins text-[9px] tracking-[1px] text-[#666] uppercase">End</div>
-          </div>
-        </div>
+        <Label>Project</Label>
+        <ProjectPicker projects={doc.projects} currentId={task.projectId} onPick={(projectId) => apply((d) => updateTask(d, task.id, { projectId }))} />
       </div>
+
       <div>
         <Label>Notes</Label>
         <TextField
           multiline
           value={task.notes}
           placeholder="Links, details…"
+          ariaLabel="Notes"
           coalesceKey={`task:${task.id}:notes`}
           update={(d, notes) => updateTask(d, task.id, { notes })}
         />
       </div>
+
+      <Divider />
       <div className="flex gap-2">
         <PanelButton onClick={() => duplicateBlocks([task.id])}>
-          <Copy size={12} /> Duplicate
+          <Copy size={14} /> Duplicate
         </PanelButton>
         <PanelButton danger onClick={() => deleteBlocks(new Set([task.id]))}>
-          <Trash2 size={12} /> Delete
+          <Trash2 size={14} /> Delete
         </PanelButton>
       </div>
     </div>
@@ -118,36 +128,33 @@ function ManyBlocks({ ids, doc }: { ids: ReadonlySet<string>; doc: TimelineDoc }
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="font-poppins text-[13px] text-white">{selected.length} blocks selected</div>
       <div>
-        <Label icon={<Type size={11} />}>Set title for all</Label>
-        <div className="flex gap-1.5">
+        <Label>Set title for all</Label>
+        <div className="flex gap-2">
           <input
             value={title}
             placeholder="New title"
+            aria-label="Title for all selected blocks"
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && applyTitle()}
-            className={inputClass}
+            className={input}
           />
-          <button
-            type="button"
-            onClick={applyTitle}
-            className="shrink-0 border border-[#2a2a2a] px-3 font-poppins text-[10px] text-[#aaa] uppercase hover:border-[#666] hover:text-white"
-          >
+          <button type="button" onClick={applyTitle} className={btn('secondary')}>
             Apply
           </button>
         </div>
       </div>
       <div>
-        <Label icon={<FolderOpen size={11} />}>Assign project to all</Label>
+        <Label>Project for all</Label>
         <ProjectPicker projects={doc.projects} currentId={shared} onPick={(projectId) => apply((d) => updateTasks(d, ids, { projectId }))} />
       </div>
+      <Divider />
       <div className="flex gap-2">
         <PanelButton onClick={() => duplicateBlocks(ids)}>
-          <Copy size={12} /> Duplicate all
+          <Copy size={14} /> Duplicate all
         </PanelButton>
         <PanelButton danger onClick={() => deleteBlocks(ids)}>
-          <Trash2 size={12} /> Delete all
+          <Trash2 size={14} /> Delete all
         </PanelButton>
       </div>
     </div>
@@ -157,20 +164,19 @@ function ManyBlocks({ ids, doc }: { ids: ReadonlySet<string>; doc: TimelineDoc }
 function NothingSelected({ doc }: { doc: TimelineDoc }) {
   const orphans = orphanTasks(doc)
   return (
-    <div className="flex flex-col items-center gap-4 pt-10 text-center">
-      <Zap size={24} className="text-[#555]" />
-      <div className="font-poppins text-[11px] leading-relaxed text-[#777]">
-        No block selected.
-        <br />
-        Click a block, or double-click a row to create one.
+    <div className="flex flex-col items-center gap-3 pt-12 text-center">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sunken text-ink-subtle">
+        <MousePointerClick size={18} />
       </div>
+      <div className="text-[13px] font-medium text-ink">No block selected</div>
+      <div className="max-w-[220px] text-[12px] leading-relaxed text-ink-subtle">Click a block to see its details, or double-click a row to create one.</div>
       {orphans.length > 0 && (
-        <div className="mt-6 w-full border border-[#3a1a1a] p-3 text-left">
-          <div className="mb-2 font-poppins text-[11px] text-[#e0a040]">
+        <div className="mt-6 w-full rounded-lg border border-warn/30 bg-warn-soft p-3 text-left">
+          <div className="mb-2.5 text-[12px] leading-relaxed text-warn-ink">
             {orphans.length} block{orphans.length === 1 ? ' is' : 's are'} on rows that no longer exist and can’t be shown.
           </div>
           <PanelButton danger onClick={() => apply((d) => deleteTasks(d, new Set(orphans.map((t) => t.id))))}>
-            <Trash2 size={12} /> Delete them
+            <Trash2 size={14} /> Delete them
           </PanelButton>
         </div>
       )}
@@ -185,10 +191,7 @@ export function Inspector() {
 
   return (
     <div className="p-5">
-      <div className="mb-5 flex items-center gap-2 font-bebas text-[22px] tracking-[2px] text-[#aaa]">
-        {selected.length > 1 ? <SquareDashedMousePointer size={18} /> : <Zap size={18} />}
-        {selected.length > 1 ? 'Bulk edit' : 'Inspect block'}
-      </div>
+      {selected.length > 1 && <h2 className="m-0 mb-5 text-[15px] font-semibold">{selected.length} blocks selected</h2>}
       {selected.length === 1 ? (
         <SingleBlock key={selected[0]!.id} task={selected[0]!} doc={doc} />
       ) : selected.length > 1 ? (
